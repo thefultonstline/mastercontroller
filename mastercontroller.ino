@@ -12,6 +12,8 @@ const byte REV9Pin = 6;//park pin. 1 = park
 const byte MC5Pin = 4; //throttle down 4
 const byte MC3Pin = 2; //throttle down 3
 const byte MC4Pin = 3; //throttle down 1/2
+const byte brakePin = 14; //brake switch wired
+const byte REV6Pin = 0; //Dead Man Switch connects here (REV6 not used)
 
 byte bitstring = 0;
 //bit 0 = parked
@@ -20,6 +22,8 @@ byte bitstring = 0;
 //bit 3 = throttle down 1/2
 //bit 4 = throttle down 3
 //bit 5 = throttle down 4
+//bit 6 = brake in use
+//bit 7 = dead man swch 
 
 const byte REV9Bit = 0; //parking 0 = parked
 const byte REV8Bit = 1; //direction 0 = forward. 1 = not forward
@@ -27,6 +31,8 @@ const byte MC1Bit = 2; //coasting. 0 = coast. 1 = accelerate
 const byte MC4Bit = 3; //throttle down 1/2
 const byte MC3Bit = 4; //throttle down 3
 const byte MC5Bit = 5; //throttle down 4
+const byte brakeBit = 6; //brake is on
+const byte REV6Bit = 7; //dead man switch
 
 void setup() {
 
@@ -43,6 +49,8 @@ void setup() {
   pinMode(MC5Pin, INPUT);
   pinMode(REV8Pin, INPUT);
   pinMode(REV9Pin, INPUT);
+  pinMode(brakePin, INPUT);
+  pinMode(REV6Pin, INPUT);
 
 
   if (digitalRead(REV9Pin)){//read state of switch 
@@ -59,7 +67,14 @@ void clearBit(byte pos){
 }
 
 void loop() {
-  //bitstring ^= analogRead(A0);
+
+  //dead man switch
+  if (digitalRead(REV6Pin)){ 
+    setBit(REV6Bit);
+  }
+  else{
+    clearBit(REV6Bit);
+  }
 
   //parking bit
   if (digitalRead(REV9Pin)){ 
@@ -75,6 +90,14 @@ void loop() {
   }
   else{
     clearBit(REV8Bit);
+  }
+
+  //brake bit - NEED TO CONVERT TO ANALOG
+  if (digitalRead(brakePin)){ 
+    setBit(brakeBit);
+  }
+  else{
+    clearBit(brakeBit);
   }
 
   //Coast
