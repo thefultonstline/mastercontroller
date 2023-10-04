@@ -14,16 +14,17 @@ const byte MC1Bit = 2; //coasting. 0 = coast. 1 = accelerate
 const byte MC4Bit = 3; //throttle down 1/2
 const byte MC3Bit = 4; //throttle down 3
 const byte MC5Bit = 5; //throttle down 4
+const byte brakeBit = 6; //brake is on
+const byte REV6Bit = 7; //dead man switch
 
-byte motorspeed = 0;
+int motorspeed = 0;
 int motorsteps;
 byte forwardpin = 3;
 byte backwardpin = 5;
-byte currentthrottle;
-byte brakevalue;
 byte motorpin;
 
-byte maxmotorspeed = 155;
+int maxmotorspeed = 155;
+int pwmoutput;
 
 bool getBit(byte bitval){
   return ((bitstring >> bitval) & 1);
@@ -46,22 +47,23 @@ void setup() {
 
 void loop() {
 
-    for (int i = 5; i >=0; i--){
+    /*for (int i = 5; i >=0; i--){
       Serial.print((bitstring>>i)&1);
     }
-    Serial.println(" ");
+    Serial.println(" ");*/
 
    if (radio.available()) {
     radio.read(&bitstring, sizeof(bitstring));
    }
    
-   if (!(getBit(REV9Bit))){ //if parked
+   if (!(getBit(REV9Bit))){ //check if parked - do nothing
     digitalWrite(forwardpin, 0);
     digitalWrite(backwardpin,0);
+    motorspeed = 0;
     return; 
    }
 
-   if (!(getBit(REV8Bit))){ //determine the direction for the motor. 0 = forward
+   if (!(getBit(REV8Bit))){ //determine the direction for the motor. 0 = forward 1 = backward
       motorpin = forwardpin;
       digitalWrite(backwardpin,0);   
    }
@@ -70,8 +72,12 @@ void loop() {
       digitalWrite(forwardpin,0);
    }
 
-   if (getBit(MC5Bit)){
-      motorsteps = 3;    
+   if(!getBit(REV6Bit)){//dead man switch - EMERGENCY BRAKE
+      motorsteps = -5;
+   }
+   //now we check if we are accelerating
+   else if (getBit(MC5Bit)){//
+    motorsteps = 3;    
    }
    else if (getBit(MC3Bit)){
     motorsteps = 2;
@@ -79,21 +85,49 @@ void loop() {
    else if (getBit(MC4Bit)){
     motorsteps = 1;
    }
-   else if (getBit(MC1Bit)){
-   // motorsteps = -1;
+   //check if we are coasting
+   else if (!getBit(MC1Bit)){
+      if (getBit(brakeBit)){//CAN ONLY BRAKE WHEN NOT ACCELERATIING
+        motorsteps = -3;//Brake deceleration
+      }
+      else{
+        motorsteps = -1;//Coast deceleration
+      }
    }
 
 
+/*
    if (motorspeed < 155 && motorspeed >= 0 && getBit(MC1Bit)){
     motorspeed += motorsteps;
    }
 
   else if (motorspeed > 0 && !getBit(MC1Bit)){
     motorspeed = (motorspeed - 1);
+   }*/
+
+   
+
+    motorspeed += motorsteps;
+   
+   if (motorspeed >= maxmotorspeed){
+    motorspeed = maxmotorspeed;
+   }
+   else if (motorspeed < 0){
+    motorspeed = 0;
    }
 
+   //pwmoutput = map(motorspeed, 0, 511, 0, 155);
+
    analogWrite(motorpin, motorspeed);
-       Serial.println(motorspeed);
+   //Serial.print(motorspeed);
+  //Serial.print(" And steps ");
+   Serial.print(" bitstring  ");
+   Serial.print(bitstring);
+   Serial.print(" motor step ");
+   Serial.print(motorsteps);
+    Serial.print(" mototput speed ");
+   Serial.println(motorspeed);
+
 
 
   delay(100);
