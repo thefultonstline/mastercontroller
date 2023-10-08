@@ -96,15 +96,6 @@ void loop() {
    }
 
 
-/*
-   if (motorspeed < 155 && motorspeed >= 0 && getBit(MC1Bit)){
-    motorspeed += motorsteps;
-   }
-
-  else if (motorspeed > 0 && !getBit(MC1Bit)){
-    motorspeed = (motorspeed - 1);
-   }*/
-
    
 
     motorspeed += motorsteps;
@@ -114,21 +105,15 @@ void loop() {
    }
    else if (motorspeed < 0){
     motorspeed = 0;
+    }
+    else if (motorspeed > 64) && (motorspeed <= 68){
+      motorspeed = 0;
    }
-
-   //pwmoutput = map(motorspeed, 0, 511, 0, 155);
+    else if (motorspeed >= 1) && (motorspeed <= 3){
+      motorspeed = 69;
+}
 
    analogWrite(motorpin, motorspeed);
-   //Serial.print(motorspeed);
-  //Serial.print(" And steps ");
-   Serial.print(" bitstring  ");
-   Serial.print(bitstring);
-   Serial.print(" motor step ");
-   Serial.print(motorsteps);
-    Serial.print(" mototput speed ");
-   Serial.println(motorspeed);
-
-
 
   delay(100);
 }
