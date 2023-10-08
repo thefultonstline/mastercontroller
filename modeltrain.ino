@@ -106,10 +106,10 @@ void loop() {
    else if (motorspeed < 0){
     motorspeed = 0;
     }
-    else if (motorspeed > 64) && (motorspeed <= 68){
+    else if ((motorspeed > 64) && (motorspeed <= 68)){
       motorspeed = 0;
    }
-    else if (motorspeed >= 1) && (motorspeed <= 3){
+    else if ((motorspeed >= 1) && (motorspeed <= 3)){
       motorspeed = 69;
 }
 
