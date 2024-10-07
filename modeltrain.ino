@@ -6,7 +6,8 @@ RF24 radio(7, 8); // CE, CSN
 
 const byte address[6] = "00001";
 
-byte bitstring = 0;
+int bitstring = 0;
+int brake = 90;
 
 const byte REV9Bit = 0; //parking 0 = parked
 const byte REV8Bit = 1; //direction 0 = forward. 1 = not forward
@@ -14,8 +15,7 @@ const byte MC1Bit = 2; //coasting. 0 = coast. 1 = accelerate
 const byte MC4Bit = 3; //throttle down 1/2
 const byte MC3Bit = 4; //throttle down 3
 const byte MC5Bit = 5; //throttle down 4
-const byte brakeBit = 6; //brake is on
-const byte REV6Bit = 7; //dead man switch
+const byte REV6Bit = 6; //dead man switch
 
 int motorspeed = 0;
 int motorsteps;
@@ -41,7 +41,7 @@ void setup() {
   pinMode(forwardpin, OUTPUT);
   pinMode(backwardpin, OUTPUT);
 
-  Serial.begin(9600);
+  //Serial.begin(9600);
 
 }
 
@@ -51,6 +51,7 @@ void loop() {
       Serial.print((bitstring>>i)&1);
     }
     Serial.println(" ");*/
+    //Serial.println(bitstring);
 
    if (radio.available()) {
     radio.read(&bitstring, sizeof(bitstring));
@@ -63,6 +64,7 @@ void loop() {
     return; 
    }
 
+
    if (!(getBit(REV8Bit))){ //determine the direction for the motor. 0 = forward 1 = backward
       motorpin = forwardpin;
       digitalWrite(backwardpin,0);   
@@ -72,9 +74,14 @@ void loop() {
       digitalWrite(forwardpin,0);
    }
 
-   if(!getBit(REV6Bit)){//dead man switch - EMERGENCY BRAKE
+  //check brake 
+   //brake = bitstring >> 7;
+
+   if(!getBit(REV6Bit)|| (getBit(MC1Bit) && brake < 70)){//dead man switch - EMERGENCY BRAKE. Also check brake and coast for race condition
       motorsteps = -5;
    }
+
+
    //now we check if we are accelerating
    else if (getBit(MC5Bit)){//
     motorsteps = 3;    
@@ -85,10 +92,14 @@ void loop() {
    else if (getBit(MC4Bit)){
     motorsteps = 1;
    }
+
    //check if we are coasting
    else if (!getBit(MC1Bit)){
-      if (getBit(brakeBit)){//CAN ONLY BRAKE WHEN NOT ACCELERATIING
+      if (brake < 30){//CAN ONLY BRAKE WHEN NOT ACCELERATIING
         motorsteps = -3;//Brake deceleration
+      }
+      else if (brake < 60){
+        motorsteps = -2;
       }
       else{
         motorsteps = -1;//Coast deceleration
@@ -106,11 +117,11 @@ void loop() {
    else if (motorspeed < 0){
     motorspeed = 0;
     }
-    else if ((motorspeed > 64) && (motorspeed <= 68)){
+    else if ((motorspeed > 54) && (motorspeed <= 60)){
       motorspeed = 0;
    }
     else if ((motorspeed >= 1) && (motorspeed <= 3)){
-      motorspeed = 69;
+      motorspeed = 70;
 }
 
    analogWrite(motorpin, motorspeed);
